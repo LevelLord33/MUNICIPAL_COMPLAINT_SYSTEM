@@ -168,9 +168,23 @@ export default function LandingPage() {
   // Initialize selected officer when officers load
   useEffect(() => {
     if (officers && officers.length > 0 && !selectedOfficer) {
-      setSelectedOfficer(officers[0].name);
+      const first = officers[0];
+      const firstName = typeof first === "string" ? first : first?.name || "";
+      setSelectedOfficer(firstName);
     }
   }, [officers, selectedOfficer]);
+
+  // Auto-fill the email field when the selected officer changes
+  useEffect(() => {
+    if (role === "officer" && selectedOfficer && officers && officers.length > 0) {
+      const officerObj = officers.find(o =>
+        (typeof o === "string" ? o : o.name) === selectedOfficer
+      );
+      if (officerObj && typeof officerObj !== "string") {
+        setEmail(officerObj.email);
+      }
+    }
+  }, [selectedOfficer, role, officers]);
 
   // Statistics calculation
   const totalReceived = complaints.length + 42; // Add mock baseline
@@ -522,7 +536,7 @@ export default function LandingPage() {
             <button
               type="button"
               className={`login-role-tab ${role === "officer" ? "active-role" : ""}`}
-              onClick={() => { setRole("officer"); setLoginError(""); setRegSuccess(""); }}
+              onClick={() => { setRole("officer"); setLoginError(""); setRegSuccess(""); setEmail(""); }}
             >
               {t("officer")}
             </button>
@@ -604,17 +618,28 @@ export default function LandingPage() {
                   onChange={(e) => setSelectedOfficer(e.target.value)}
                   required
                 >
-                  {officers.map((o) => (
-                    <option key={o.name} value={o.name}>
-                      {o.name} ({o.designation})
-                    </option>
-                  ))}
+                  {officers.map((o) => {
+                    const oName = typeof o === "string" ? o : o.name;
+                    const oLabel = typeof o === "string" ? `${o} (Officer)` : `${o.name} (${o.designation})`;
+                    return (
+                      <option key={oName} value={oName}>
+                        {oLabel}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             )}
 
             <div className="login-input-group">
-              <label htmlFor="landing-email">{t("email_address")}</label>
+              <label htmlFor="landing-email">
+                {t("email_address")}
+                {role === "officer" && (
+                  <span style={{ fontWeight: "400", fontSize: "12px", color: "#6b7280", marginLeft: "8px" }}>
+                    (auto-filled from profile)
+                  </span>
+                )}
+              </label>
               <input
                 id="landing-email"
                 type="email"
@@ -623,10 +648,12 @@ export default function LandingPage() {
                     ? "name@example.com"
                     : role === "admin"
                     ? "admin@municipal.kov.in"
-                    : `${(selectedOfficer || "officer").toLowerCase().replace(/\s+/g, "")}@municipal.kov.in`
+                    : "Select an officer profile above"
                 }
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                readOnly={role === "officer"}
+                style={role === "officer" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed" } : {}}
                 required
               />
             </div>

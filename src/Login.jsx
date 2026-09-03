@@ -15,7 +15,7 @@ export default function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedOfficer, setSelectedOfficer] = useState(officers[0] || "");
+  const [selectedOfficer, setSelectedOfficer] = useState(officers[0]?.name || "");
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
@@ -145,8 +145,8 @@ export default function Login() {
                 required
               >
                 {officers.map((o) => (
-                  <option key={o} value={o}>
-                    {o} (Officer)
+                  <option key={o.officerId} value={o.name}>
+                    {o.name} — {o.designation} ({o.department})
                   </option>
                 ))}
               </select>
