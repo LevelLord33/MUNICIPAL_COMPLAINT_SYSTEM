@@ -59,7 +59,7 @@ body {
 
 /* ---------------- ACCESSIBILITY FOCUS STATE ---------------- */
 a:focus,
-button:focus,
+button:not(.lang-btn):focus,
 input:focus,
 select:focus,
 textarea:focus {
@@ -1505,40 +1505,132 @@ textarea:focus {
   box-shadow: none;
 }
 
-/* Legacy aliases — keep so old code doesn't break visually */
+/* Language Switcher — Static, prominent visible buttons with bilingual icons */
 .lang-switcher {
   display: inline-flex;
-  background-color: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 3px;
-  gap: 2px;
   align-items: center;
+  background-color: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 3px 5px;
+  gap: 5px;
   margin-right: 15px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.lang-switcher-globe {
+  font-size: 15px;
+  margin-left: 2px;
+  margin-right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  user-select: none;
 }
 
 .lang-btn {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 5px 11px;
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.15s ease;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+  line-height: 1.2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  text-decoration: none;
 }
 
 .lang-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: #0f172a !important;
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
 }
 
-.lang-btn.active {
-  background: var(--govuk-blue);
-  color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+.lang-btn:focus,
+.lang-btn:focus-visible {
+  outline: 3px solid var(--govuk-yellow) !important;
+  outline-offset: 1px !important;
+}
+
+.lang-btn.active,
+.lang-btn.active:focus,
+.lang-btn.active:focus-visible {
+  background-color: var(--govuk-blue) !important;
+  color: #ffffff !important;
+  border-color: var(--govuk-blue) !important;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(29, 112, 184, 0.35) !important;
+}
+
+.lang-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  background: #e2e8f0;
+  color: #475569 !important;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.lang-btn.active .lang-badge,
+.lang-btn.active:focus .lang-badge,
+.lang-btn.active:focus-visible .lang-badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* Dark header variant (Letterhead) */
+.letterhead .lang-switcher {
+  background-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: none;
+}
+
+.letterhead .lang-btn {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: none;
+}
+
+.letterhead .lang-btn:hover {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.letterhead .lang-btn.active,
+.letterhead .lang-btn.active:focus,
+.letterhead .lang-btn.active:focus-visible {
+  background-color: var(--govuk-blue) !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+.letterhead .lang-btn .lang-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff !important;
+}
+
+.letterhead .lang-btn.active .lang-badge,
+.letterhead .lang-btn.active:focus .lang-badge,
+.letterhead .lang-btn.active:focus-visible .lang-badge {
+  background: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
 }
 
 @media (max-width: 768px) {

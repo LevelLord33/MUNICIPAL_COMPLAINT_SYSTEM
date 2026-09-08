@@ -172,20 +172,27 @@ function MCMAppInner() {
           </div>
 
           <div className="header-right">
-            <div className="lang-switcher">
+            <div className="lang-switcher" role="group" aria-label="Language selection">
+              <span className="lang-switcher-globe" aria-hidden="true" title="Language / மொழி">🌐</span>
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
                 className={`lang-btn ${language === "en" ? "active" : ""}`}
+                aria-pressed={language === "en"}
+                title="Switch to English"
               >
-                English
+                <span className="lang-badge">EN</span>
+                <span className="lang-label">English</span>
               </button>
               <button
                 type="button"
                 onClick={() => setLanguage("ta")}
                 className={`lang-btn ${language === "ta" ? "active" : ""}`}
+                aria-pressed={language === "ta"}
+                title="தமிழுக்கு மாற்றவும்"
               >
-                தமிழ்
+                <span className="lang-badge">த</span>
+                <span className="lang-label">தமிழ்</span>
               </button>
             </div>
             <span className="logged-in-as">
