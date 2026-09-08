@@ -165,6 +165,10 @@ export function AppContextProvider({ children }) {
     });
   }, [setCategories]);
 
+  const handleDeleteCategory = useCallback((cat) => {
+    setCategories((prev) => prev.filter((c) => c !== cat));
+  }, [setCategories]);
+
   const [language, setLanguage] = useLocalStorage("language", "en");
 
   const t = useCallback((key) => {
@@ -194,6 +198,7 @@ export function AppContextProvider({ children }) {
         deleteOfficer: handleDeleteOfficer,
         addCategory: handleAddCategory,
         editCategory: handleEditCategory,
+        deleteCategory: handleDeleteCategory,
         language,
         setLanguage,
         t,

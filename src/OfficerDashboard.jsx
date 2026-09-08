@@ -1,5 +1,5 @@
 import { useState, useMemo, useContext, useRef } from "react";
-import { ticketNo, getSLADeadline, checkSLABreach } from "./shared";
+import { ticketNo, getSLADeadline, checkSLABreach, ComplaintFilterBar, ComplaintTable } from "./shared";
 import { AppContext } from "./AppContext";
 import { useRouter, matchRoute } from "./router";
 
@@ -15,6 +15,7 @@ export default function OfficerDashboard() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [proofPhotos, setProofPhotos] = useState([]);
   const [proofError, setProofError] = useState("");
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
 
   // Search in History state
@@ -23,6 +24,11 @@ export default function OfficerDashboard() {
   // Officer Profile edit
   const [profilePhone, setProfilePhone] = useState(user.phone || "+91 94421 12345");
   const [profileSuccess, setProfileSuccess] = useState(false);
+
+  // Queue filter state
+  const [queueSearch, setQueueSearch] = useState("");
+  const [queueCategory, setQueueCategory] = useState("All");
+  const [queueStatus, setQueueStatus] = useState("All");
 
   // Complaints assigned to this officer
   const myComplaints = useMemo(() => {
@@ -85,9 +91,31 @@ export default function OfficerDashboard() {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setProofPhotos((prev) => [...prev, reader.result]);
+      setProofPhotos((prev) => {
+        if (prev.length >= 3) return prev;
+        return [...prev, reader.result];
+      });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      Array.from(e.dataTransfer.files).forEach(processProofFile);
+    }
   };
 
   const handleUpdateProgress = (complaintId, e) => {
@@ -120,6 +148,9 @@ export default function OfficerDashboard() {
     if (!complaint) {
       return (
         <div>
+          <a onClick={() => navigate("#/officer/queue")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+            ← Back to work queue
+          </a>
           <h2 className="govuk-heading-l">Access Denied / Task Not Found</h2>
           <p className="govuk-body">You do not have permission to view this complaint, or it is assigned to another department/officer.</p>
           <button className="govuk-button govuk-button--secondary" onClick={() => navigate("#/officer/queue")}>
@@ -142,7 +173,7 @@ export default function OfficerDashboard() {
 
     return (
       <div>
-        <a onClick={() => navigate("#/officer/queue")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px" }}>
+        <a onClick={() => navigate("#/officer/queue")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
           ← Back to work queue
         </a>
         <h2 className="govuk-heading-xl">Complaint Task: {ticketNo(complaint.complaintId)}</h2>
@@ -247,36 +278,71 @@ export default function OfficerDashboard() {
               {/* Resolution proof upload */}
               <div className="govuk-form-group" style={{ padding: 0, border: "none" }}>
                 <label className="govuk-label">Proof Photograph (Optional)</label>
-                <span className="govuk-hint">Attach a photo demonstrating completed work or current status (JPG/PNG/WEBP, Max 3, 5MB each)</span>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      processProofFile(e.target.files[0]);
-                    }
-                  }}
-                  style={{ display: "block", marginTop: "10px" }}
-                />
-                {proofError && <span className="govuk-error-message">{proofError}</span>}
+                <span className="govuk-hint">Attach a photo demonstrating completed work or current status</span>
+
+                <div
+                  className={`govuk-file-upload-box ${dragActive ? "drag-active" : ""}`}
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ marginTop: "10px" }}
+                >
+                  <span style={{ fontSize: "28px" }}>📸</span>
+                  <p className="govuk-body" style={{ margin: "5px 0" }}>
+                    {dragActive ? "Drop the proof image here..." : "Drag & drop an image, or click to choose file"}
+                  </p>
+                  <span className="govuk-hint">PNG, JPG, or WebP (Up to 3 photos, max 5MB each)</span>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        Array.from(e.target.files).forEach(processProofFile);
+                      }
+                    }}
+                    style={{ display: "none" }}
+                  />
+                </div>
+
+                {proofError && (
+                  <span className="govuk-error-message" style={{ marginTop: "8px", display: "block" }}>
+                    <span className="govuk-visually-hidden">Error:</span> {proofError}
+                  </span>
+                )}
+
                 {proofPhotos.length > 0 && (
-                  <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                    {proofPhotos.map((p, idx) => (
-                      <div key={idx} style={{ position: "relative" }}>
-                        <img src={p} style={{ width: "60px", height: "60px", objectFit: "cover" }} alt={`Proof ${idx + 1}`} />
-                        <button
-                          type="button"
-                          className="govuk-button govuk-button--secondary"
-                          style={{
-                            position: "absolute", top: "-5px", right: "-5px", padding: "1px 4px", fontSize: "10px", background: "red", color: "white", border: "none"
-                          }}
-                          onClick={() => setProofPhotos((prev) => prev.filter((_, i) => i !== idx))}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                  <div style={{ marginTop: "15px" }}>
+                    <p className="govuk-body" style={{ fontWeight: "700" }}>Proof Photos Attached ({proofPhotos.length}/3)</p>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      {proofPhotos.map((p, idx) => (
+                        <div key={idx} className="govuk-file-upload-preview" style={{ margin: 0, position: "relative" }}>
+                          <img src={p} style={{ width: "80px", height: "80px", objectFit: "cover" }} alt={`Proof ${idx + 1}`} />
+                          <button
+                            type="button"
+                            className="govuk-button govuk-button--secondary"
+                            style={{
+                              position: "absolute",
+                              top: "-5px",
+                              right: "-5px",
+                              padding: "2px 6px",
+                              fontSize: "12px",
+                              background: "red",
+                              color: "white",
+                              borderRadius: "50%",
+                              border: "none",
+                              cursor: "pointer"
+                            }}
+                            onClick={() => setProofPhotos((prev) => prev.filter((_, i) => i !== idx))}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -315,106 +381,70 @@ export default function OfficerDashboard() {
 
   // 2. My Work Queue Page
   if (hash.includes("/officer/queue")) {
+    // SLA extra column renderer
+    const slaExtraCol = [{
+      header: "SLA Deadline",
+      render: (c) => {
+        const deadline = getSLADeadline(c.createdAt, c.category, c.priority);
+        const isBreached = checkSLABreach(c.createdAt, c.category, c.priority, c.status, c.completionDate);
+        return (
+          <span style={{ fontWeight: "700", color: isBreached ? "var(--govuk-red)" : "var(--govuk-green)" }}>
+            {deadline}{isBreached ? " (BREACHED)" : ""}
+          </span>
+        );
+      }
+    }];
+
+    // Apply queue filters
+    const filteredQueue = workQueue.filter((c) => {
+      const catOk = queueCategory === "All" || c.category === queueCategory;
+      const statusOk = queueStatus === "All" || c.status === queueStatus;
+      const q = queueSearch.trim().toLowerCase();
+      const searchOk = !q || c.title.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        ticketNo(c.complaintId).toLowerCase().includes(q);
+      return catOk && statusOk && searchOk;
+    });
+
     return (
       <div>
+        <a onClick={() => navigate("#/officer/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">Assigned Work Queue</h2>
         <p className="govuk-body">Below are your active work assignments, sorted by estimated priority. SLA warnings will display if a task is close to or has breached target times.</p>
 
-        <table className="govuk-table">
-          <thead>
-            <tr>
-              <th className="govuk-table__header">Ticket ID</th>
-              <th className="govuk-table__header">Title</th>
-              <th className="govuk-table__header">Location</th>
-              <th className="govuk-table__header">Priority</th>
-              <th className="govuk-table__header">SLA Deadline / Status</th>
-              <th className="govuk-table__header">Status</th>
-              <th className="govuk-table__header">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {workQueue.map((c) => {
-              const deadline = getSLADeadline(c.createdAt, c.category, c.priority);
-              const isBreached = checkSLABreach(c.createdAt, c.category, c.priority, c.status, c.completionDate);
-              return (
-                <tr className="govuk-table__row" key={c.complaintId}>
-                  <td className="govuk-table__cell" style={{ fontWeight: "700" }}>{ticketNo(c.complaintId)}</td>
-                  <td className="govuk-table__cell">{c.title}</td>
-                  <td className="govuk-table__cell">{c.location}</td>
-                  <td className="govuk-table__cell">
-                    <span style={{ fontWeight: c.priority === "High" ? "700" : "400", color: c.priority === "High" ? "var(--govuk-red)" : "inherit" }}>
-                      {c.priority}
-                    </span>
-                  </td>
-                  <td className="govuk-table__cell">
-                    <span style={{ fontWeight: "700", color: isBreached ? "var(--govuk-red)" : "var(--govuk-green)" }}>
-                      {deadline} {isBreached ? "(BREACHED)" : ""}
-                    </span>
-                  </td>
-                  <td className="govuk-table__cell">
-                    <span className={`govuk-tag ${
-                      c.status === "In Progress" ? "govuk-tag--orange" : "govuk-tag--purple"
-                    }`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="govuk-table__cell">
-                    <button className="govuk-button" style={{ padding: "4px 8px", fontSize: "14px" }} onClick={() => navigate(`#/officer/complaint/${c.complaintId}`)}>
-                      Update Task
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-            {workQueue.length === 0 && (
-              <tr>
-                <td className="govuk-table__cell" colSpan={7} style={{ textAlign: "center" }}>
-                  No active complaints in queue.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <ComplaintFilterBar
+          searchQuery={queueSearch}
+          onSearchChange={setQueueSearch}
+          filterCategory={queueCategory}
+          onCategoryChange={setQueueCategory}
+          categories={[...new Set(workQueue.map(c => c.category))]}
+          filterStatus={queueStatus}
+          onStatusChange={setQueueStatus}
+          searchPlaceholder="Search by ticket ID or title..."
+          searchLabel="Search Queue"
+        />
+
+        <ComplaintTable
+          complaints={filteredQueue}
+          extraColumns={slaExtraCol}
+          emptyMessage="No active complaints in queue."
+          onAction={(c) => navigate(`#/officer/complaint/${c.complaintId}`)}
+          actionLabel="Update Task"
+          actionClassName="govuk-button"
+        />
 
         {/* Shared queue section */}
         <h3 className="govuk-heading-l" style={{ marginTop: "40px" }}>Department Shared Queue ({user.department})</h3>
         <p className="govuk-body">Unassigned complaints registered in your department. These require Admin allocation before they can be resolved by you.</p>
-        
-        <table className="govuk-table">
-          <thead>
-            <tr>
-              <th className="govuk-table__header">Ticket ID</th>
-              <th className="govuk-table__header">Title</th>
-              <th className="govuk-table__header">Location</th>
-              <th className="govuk-table__header">Priority</th>
-              <th className="govuk-table__header">Registered</th>
-              <th className="govuk-table__header">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sharedQueue.map((c) => (
-              <tr className="govuk-table__row" key={c.complaintId}>
-                <td className="govuk-table__cell" style={{ fontWeight: "700" }}>{ticketNo(c.complaintId)}</td>
-                <td className="govuk-table__cell">{c.title}</td>
-                <td className="govuk-table__cell">{c.location}</td>
-                <td className="govuk-table__cell">{c.priority}</td>
-                <td className="govuk-table__cell">{c.createdAt}</td>
-                <td className="govuk-table__cell">
-                  <button className="govuk-button govuk-button--secondary" style={{ padding: "4px 8px", fontSize: "14px" }} onClick={() => navigate(`#/officer/complaint/${c.complaintId}`)}>
-                    View Record
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {sharedQueue.length === 0 && (
-              <tr>
-                <td className="govuk-table__cell" colSpan={6} style={{ textAlign: "center" }}>
-                  No unassigned complaints in shared department queue.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+
+        <ComplaintTable
+          complaints={sharedQueue}
+          emptyMessage="No unassigned complaints in shared department queue."
+          onAction={(c) => navigate(`#/officer/complaint/${c.complaintId}`)}
+          actionLabel="View Record"
+        />
       </div>
     );
   }
@@ -423,59 +453,34 @@ export default function OfficerDashboard() {
   if (hash.includes("/officer/completed")) {
     return (
       <div>
+        <a onClick={() => navigate("#/officer/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">Completed Resolutions History</h2>
         <p className="govuk-body">Archive of complaints successfully solved or closed by you.</p>
 
-        <div style={{ background: "#ffffff", padding: "20px", border: "1px solid var(--border-color)", marginBottom: "30px" }}>
-          <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="history-search">Search Completed Archive</label>
-          <input
-            className="govuk-input"
-            id="history-search"
-            type="text"
-            value={historySearch}
-            onChange={(e) => setHistorySearch(e.target.value)}
-            placeholder="Search by ID or keywords..."
-            style={{ maxWidth: "400px" }}
-          />
-        </div>
+        <ComplaintFilterBar
+          searchQuery={historySearch}
+          onSearchChange={setHistorySearch}
+          filterCategory={queueCategory}
+          onCategoryChange={setQueueCategory}
+          categories={[...new Set(completedHistory.map(c => c.category))]}
+          filterStatus={queueStatus}
+          onStatusChange={setQueueStatus}
+          searchPlaceholder="Search by ID or keywords..."
+          searchLabel="Search Completed Archive"
+        />
 
-        <table className="govuk-table">
-          <thead>
-            <tr>
-              <th className="govuk-table__header">Ticket ID</th>
-              <th className="govuk-table__header">Title</th>
-              <th className="govuk-table__header">Location</th>
-              <th className="govuk-table__header">Category</th>
-              <th className="govuk-table__header">Status</th>
-              <th className="govuk-table__header">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {completedHistory.map((c) => (
-              <tr className="govuk-table__row" key={c.complaintId}>
-                <td className="govuk-table__cell" style={{ fontWeight: "700" }}>{ticketNo(c.complaintId)}</td>
-                <td className="govuk-table__cell">{c.title}</td>
-                <td className="govuk-table__cell">{c.location}</td>
-                <td className="govuk-table__cell">{c.category}</td>
-                <td className="govuk-table__cell">
-                  <span className="govuk-tag govuk-tag--green">{c.status}</span>
-                </td>
-                <td className="govuk-table__cell">
-                  <button className="govuk-button govuk-button--secondary" style={{ padding: "4px 8px", fontSize: "14px" }} onClick={() => navigate(`#/officer/complaint/${c.complaintId}`)}>
-                    View Record
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {completedHistory.length === 0 && (
-              <tr>
-                <td className="govuk-table__cell" colSpan={6} style={{ textAlign: "center" }}>
-                  No completed complaints found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <ComplaintTable
+          complaints={completedHistory.filter((c) => {
+            const catOk = queueCategory === "All" || c.category === queueCategory;
+            const statusOk = queueStatus === "All" || c.status === queueStatus;
+            return catOk && statusOk;
+          })}
+          emptyMessage="No completed complaints found."
+          onAction={(c) => navigate(`#/officer/complaint/${c.complaintId}`)}
+          actionLabel="View Record"
+        />
       </div>
     );
   }
@@ -484,6 +489,9 @@ export default function OfficerDashboard() {
   if (hash.includes("/officer/profile")) {
     return (
       <div>
+        <a onClick={() => navigate("#/officer/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">Officer Profile</h2>
         <p className="govuk-body">Your official workspace and details.</p>
 
@@ -550,27 +558,33 @@ export default function OfficerDashboard() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", minHeight: "220px" }}>
           <h3 className="govuk-heading-m">Assigned Work Queue</h3>
-          {workQueue.length > 0 ? (
-            <div>
-              <p className="govuk-body">You have <strong>{workQueue.length}</strong> active task assignments.</p>
-              <button className="govuk-button" onClick={() => navigate("#/officer/queue")}>
-                Access Queue
-              </button>
-            </div>
-          ) : (
-            <p className="govuk-body">No pending assignments. All caught up!</p>
-          )}
+          <p className="govuk-body" style={{ flex: 1 }}>
+            {workQueue.length > 0 ? (
+              <>You have <strong>{workQueue.length}</strong> active task assignments.</>
+            ) : (
+              "No pending assignments. All caught up!"
+            )}
+          </p>
+          <div style={{ marginTop: "auto", paddingTop: "15px" }}>
+            <button className="govuk-button" onClick={() => navigate("#/officer/queue")} style={{ marginBottom: 0 }}>
+              Access Queue
+            </button>
+          </div>
         </div>
 
-        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)" }}>
+        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", minHeight: "220px" }}>
           <h3 className="govuk-heading-m">Shared Department Queue ({user.department})</h3>
-          <p className="govuk-body">There are <strong>{sharedQueue.length}</strong> unassigned tasks in your department.</p>
-          <button className="govuk-button govuk-button--secondary" onClick={() => navigate("#/officer/queue")}>
-            View Shared Queue
-          </button>
+          <p className="govuk-body" style={{ flex: 1 }}>
+            There are <strong>{sharedQueue.length}</strong> unassigned tasks in your department.
+          </p>
+          <div style={{ marginTop: "auto", paddingTop: "15px" }}>
+            <button className="govuk-button govuk-button--secondary" onClick={() => navigate("#/officer/queue")} style={{ marginBottom: 0 }}>
+              View Shared Queue
+            </button>
+          </div>
         </div>
       </div>
     </div>

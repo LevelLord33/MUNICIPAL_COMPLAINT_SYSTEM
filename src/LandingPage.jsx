@@ -525,44 +525,56 @@ export default function LandingPage() {
             </div>
           )}
 
-          <div className="login-roles-tabs">
+          <div className="seg-control seg-control--full" style={{ marginBottom: "20px" }}>
             <button
               type="button"
-              className={`login-role-tab ${role === "citizen" ? "active-role" : ""}`}
+              className={`seg-control__btn ${role === "citizen" ? "seg-control__btn--active" : ""}`}
               onClick={() => { setRole("citizen"); setLoginError(""); setRegSuccess(""); }}
             >
               {t("citizen")}
             </button>
             <button
               type="button"
-              className={`login-role-tab ${role === "officer" ? "active-role" : ""}`}
-              onClick={() => { setRole("officer"); setLoginError(""); setRegSuccess(""); setEmail(""); }}
+              className={`seg-control__btn ${role === "officer" ? "seg-control__btn--active" : ""}`}
+              onClick={() => {
+                setRole("officer");
+                setLoginError("");
+                setRegSuccess("");
+                const activeOfficer = selectedOfficer || (officers && (typeof officers[0] === "string" ? officers[0] : officers[0]?.name));
+                const officerObj = officers?.find(o => (typeof o === "string" ? o : o.name) === activeOfficer);
+                if (officerObj && typeof officerObj !== "string") {
+                  setEmail(officerObj.email);
+                }
+              }}
             >
               {t("officer")}
             </button>
             <button
               type="button"
-              className={`login-role-tab ${role === "admin" ? "active-role" : ""}`}
-              onClick={() => { setRole("admin"); setLoginError(""); setRegSuccess(""); }}
+              className={`seg-control__btn ${role === "admin" ? "seg-control__btn--active" : ""}`}
+              onClick={() => {
+                setRole("admin");
+                setLoginError("");
+                setRegSuccess("");
+                setEmail("admin@municipal.kov.in");
+              }}
             >
               {t("admin")}
             </button>
           </div>
 
           {role === "citizen" && (
-            <div style={{ display: "flex", gap: "10px", margin: "10px 0 20px 0", borderBottom: "1px solid #ccc", paddingBottom: "10px" }}>
+            <div className="seg-control seg-control--full" style={{ marginBottom: "20px" }}>
               <button
                 type="button"
-                className={`govuk-button govuk-button--secondary`}
-                style={{ flex: 1, fontWeight: !isRegistering ? "700" : "400", background: !isRegistering ? "#ddd" : "" }}
+                className={`seg-control__btn ${!isRegistering ? "seg-control__btn--active" : ""}`}
                 onClick={() => { setIsRegistering(false); setLoginError(""); }}
               >
                 Log In
               </button>
               <button
                 type="button"
-                className={`govuk-button govuk-button--secondary`}
-                style={{ flex: 1, fontWeight: isRegistering ? "700" : "400", background: isRegistering ? "#ddd" : "" }}
+                className={`seg-control__btn ${isRegistering ? "seg-control__btn--active" : ""}`}
                 onClick={() => { setIsRegistering(true); setLoginError(""); }}
               >
                 Register Account
@@ -615,7 +627,14 @@ export default function LandingPage() {
                 <select
                   id="landing-officer"
                   value={selectedOfficer}
-                  onChange={(e) => setSelectedOfficer(e.target.value)}
+                  onChange={(e) => {
+                    const newOfficer = e.target.value;
+                    setSelectedOfficer(newOfficer);
+                    const officerObj = officers?.find(o => (typeof o === "string" ? o : o.name) === newOfficer);
+                    if (officerObj && typeof officerObj !== "string" && officerObj.email) {
+                      setEmail(officerObj.email);
+                    }
+                  }}
                   required
                 >
                   {officers.map((o) => {

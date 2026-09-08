@@ -3,6 +3,7 @@
    ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap');
 
 :root {
   /* GOV.UK Colors */
@@ -25,6 +26,14 @@
   --tag-purple: #4c2c92;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+
+  /* Design System Status Colors (canonical — shared by tags AND card borders) */
+  --status-submitted:  #505a5f;
+  --status-assigned:   #1d70b8;
+  --status-inprogress: #f47738;
+  --status-completed:  #00703c;
+  --status-purple:     #4c2c92;
   --bg-primary: #f3f2f1;
   --bg-card: #ffffff;
   --text-primary: #0b0c0c;
@@ -224,26 +233,72 @@ textarea:focus {
   min-width: 0;
 }
 
+/* =========================================================
+   DESIGN SYSTEM — Typography Scale
+   Rule 1: Page titles + card headings → serif.
+          Everything else (section headings, labels, body) → sans.
+   ========================================================= */
+
+/* Utility classes — use anywhere */
+.ds-title {
+  font-family: var(--font-serif);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--govuk-black);
+}
+
+.ds-heading {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--govuk-black);
+}
+
+.ds-card-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--govuk-black);
+}
+
+.ds-label {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+}
+
 /* ---------------- GOV.UK TYPOGRAPHY ---------------- */
+/* Page-level titles: serif */
 .govuk-heading-xl {
-  font-size: 48px;
-  font-weight: 800;
+  font-family: var(--font-serif);
+  font-size: 42px;
+  font-weight: 700;
   line-height: 1.1;
   color: var(--govuk-black);
   margin-bottom: 25px;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
 }
 
+/* Section headings: sans */
 .govuk-heading-l {
-  font-size: 36px;
+  font-family: var(--font-sans);
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.2;
   color: var(--govuk-black);
   margin-bottom: 20px;
 }
 
+/* Panel / card headings: sans */
 .govuk-heading-m {
-  font-size: 24px;
+  font-family: var(--font-sans);
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.25;
   color: var(--govuk-black);
@@ -251,70 +306,103 @@ textarea:focus {
 }
 
 .govuk-body {
-  font-size: 19px;
+  font-size: 18px;
   line-height: 1.5;
   color: var(--govuk-black);
   margin-bottom: 20px;
 }
 
 .govuk-body-s {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.5;
   color: var(--text-secondary);
 }
 
 .govuk-hint {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--govuk-dark-grey);
   margin-top: 4px;
   margin-bottom: 8px;
   display: block;
 }
 
-/* ---------------- BUTTONS ---------------- */
-.govuk-button {
+/* =========================================================
+   DESIGN SYSTEM — Button Component
+   Rule 3: One primary (solid green), one secondary (outline).
+   ds-btn-primary / ds-btn-secondary are canonical names;
+   govuk-button / govuk-button--secondary remain valid aliases.
+   ========================================================= */
+
+/* --- Primary Button (solid green, used once per page) --- */
+.govuk-button,
+.ds-btn-primary {
   background-color: var(--govuk-green);
   color: #ffffff;
-  border: none;
-  border-bottom: 3px solid var(--govuk-green-dark);
-  padding: 10px 20px;
-  font-size: 19px;
+  border: 2px solid var(--govuk-green);
+  border-bottom: 4px solid var(--govuk-green-dark);
+  padding: 10px 22px;
+  font-size: 16px;
   font-weight: 700;
+  font-family: var(--font-sans);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  border-radius: 0;
+  transition: background-color 0.15s ease;
+  letter-spacing: 0.01em;
 }
 
-.govuk-button:hover {
+.govuk-button:hover,
+.ds-btn-primary:hover {
   background-color: var(--govuk-green-dark);
+  border-color: var(--govuk-green-dark);
 }
 
-.govuk-button:active {
+.govuk-button:active,
+.ds-btn-primary:active {
   margin-top: 3px;
-  border-bottom: none;
+  border-bottom-width: 1px;
   margin-bottom: 3px;
 }
 
-.govuk-button--secondary {
-  background-color: #f3f2f1;
+/* --- Secondary Button (outline, for lesser actions) --- */
+.govuk-button--secondary,
+.ds-btn-secondary {
+  background-color: #ffffff;
   color: var(--govuk-black);
-  border: 1px solid var(--border-color);
-  border-bottom: 3px solid #b1b4b6;
+  border: 2px solid var(--border-color);
+  border-bottom: 4px solid #b1b4b6;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  padding: 10px 22px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.govuk-button--secondary:hover {
-  background-color: #dbdad9;
+.govuk-button--secondary:hover,
+.ds-btn-secondary:hover {
+  background-color: var(--govuk-light-grey);
+  border-color: var(--govuk-dark-grey);
 }
 
+/* --- Warning / Destructive Button --- */
 .govuk-button--warning {
   background-color: var(--govuk-red);
+  border-color: var(--govuk-red);
   border-bottom-color: #8c1d0c;
+  color: #ffffff;
 }
 
 .govuk-button--warning:hover {
   background-color: #b02b17;
+  border-color: #b02b17;
 }
 
 /* ---------------- PANELS & BANNERS ---------------- */
@@ -446,7 +534,11 @@ textarea:focus {
 .govuk-tag--red { background-color: var(--tag-red); }
 .govuk-tag--turquoise { background-color: var(--tag-turquoise); }
 
-/* ---------------- STATS DASHBOARD ---------------- */
+/* =========================================================
+   DESIGN SYSTEM — Stat Cards
+   Rule 2 (alignment): stat cards are left-aligned.
+   Rule 5 (colors): border-top uses exact status-tag vars.
+   ========================================================= */
 .govuk-grid-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -457,29 +549,40 @@ textarea:focus {
 .govuk-card {
   background: #ffffff;
   border: 1px solid var(--border-color);
-  padding: 20px;
-  border-top: 5px solid var(--govuk-black);
+  padding: 20px 20px 20px 24px;  /* consistent left indent */
+  border-top: 5px solid var(--status-submitted); /* default = grey / submitted */
+  text-align: left;
 }
 
-.govuk-card--blue { border-top-color: var(--govuk-blue); }
-.govuk-card--green { border-top-color: var(--govuk-green); }
-.govuk-card--red { border-top-color: var(--govuk-red); }
-.govuk-card--orange { border-top-color: var(--govuk-orange); }
-.govuk-card--purple { border-top-color: var(--govuk-purple); }
+/* Rule 5: border-top colors match status tag palette exactly */
+.govuk-card--blue   { border-top-color: var(--status-assigned);   }  /* blue  = Assigned */
+.govuk-card--orange { border-top-color: var(--status-inprogress); }  /* orange = In Progress */
+.govuk-card--green  { border-top-color: var(--status-completed);  }  /* green = Completed */
+.govuk-card--red    { border-top-color: var(--govuk-red); }
+.govuk-card--purple { border-top-color: var(--status-purple);     }  /* purple = Pending/Officer */
 
 .govuk-card-value {
   font-size: 36px;
   font-weight: 800;
+  font-family: var(--font-sans);
+  line-height: 1.1;
+  margin-bottom: 6px;
 }
 
+/* Rule 1: Card label uses ds-label style (sans, uppercase, small) */
 .govuk-card-label {
-  font-size: 14px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   text-transform: uppercase;
+  letter-spacing: 0.6px;
   color: var(--text-secondary);
   font-weight: 700;
 }
 
-/* ---------------- TABLES ---------------- */
+/* =========================================================
+   DESIGN SYSTEM — Tables
+   Rule 2 (alignment): text columns left, numeric columns right.
+   ========================================================= */
 .govuk-table {
   width: 100%;
   border-collapse: collapse;
@@ -489,16 +592,33 @@ textarea:focus {
 
 .govuk-table__header {
   border-bottom: 2px solid var(--govuk-black);
-  padding: 12px;
+  padding: 10px 12px;
   text-align: left;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+/* Right-align numeric columns (Ticket ID, counts) */
+.govuk-table__header--numeric {
+  text-align: right;
 }
 
 .govuk-table__cell {
   border-bottom: 1px solid var(--border-color);
-  padding: 12px;
-  font-size: 16px;
+  padding: 10px 12px;
+  font-size: 15px;
+  text-align: left;
+}
+
+/* Right-align numeric data cells */
+.govuk-table__cell--numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .govuk-table__row:hover {
@@ -667,41 +787,6 @@ textarea:focus {
   padding: 40px;
   max-width: 600px;
   width: 100%;
-}
-
-.login-tabs {
-  display: flex;
-  margin-bottom: 30px;
-  border-bottom: 5px solid var(--govuk-black);
-}
-
-.login-tab {
-  flex: 1;
-  background: #f3f2f1;
-  border: 1px solid var(--border-color);
-  border-bottom: none;
-  padding: 15px 10px;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-  text-align: center;
-  color: var(--govuk-blue);
-  text-decoration: underline;
-  transition: all 0.1s ease-in-out;
-}
-
-.login-tab:hover {
-  background: #dbdad9;
-}
-
-.login-tab-active {
-  color: var(--govuk-black);
-  text-decoration: none;
-  border: 5px solid var(--govuk-black);
-  border-bottom: 5px solid #ffffff;
-  background: #ffffff;
-  margin-bottom: -5px;
-  z-index: 2;
 }
 
 .login-form .govuk-form-group {
@@ -873,39 +958,46 @@ textarea:focus {
   flex-wrap: wrap;
 }
 
+/* Rule 3: hero buttons match the canonical govuk-button visual spec */
 .hero-btn-primary {
-  background-color: #00703c;
-  color: white;
-  border: none;
+  background-color: var(--govuk-green);
+  color: #ffffff;
+  border: 2px solid var(--govuk-green);
+  border-bottom: 4px solid var(--govuk-green-dark);
+  font-family: var(--font-sans);
   font-size: 16px;
   font-weight: 700;
   padding: 12px 28px;
-  border-radius: 6px;
+  border-radius: 0;
   cursor: pointer;
-  transition: background-color 0.2s;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: background-color 0.15s ease;
+  letter-spacing: 0.01em;
 }
 
 .hero-btn-primary:hover {
-  background-color: #005a30;
+  background-color: var(--govuk-green-dark);
+  border-color: var(--govuk-green-dark);
 }
 
+/* Rule 3: hero secondary matches govuk-button--secondary spec */
 .hero-btn-secondary {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 2px solid white;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-bottom: 4px solid rgba(255, 255, 255, 0.4);
+  font-family: var(--font-sans);
   font-size: 16px;
-  font-weight: 700;
-  padding: 10px 28px;
-  border-radius: 6px;
+  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: 0;
   cursor: pointer;
-  transition: all 0.2s;
-  backdrop-filter: blur(5px);
+  transition: all 0.15s ease;
+  backdrop-filter: blur(4px);
 }
 
 .hero-btn-secondary:hover {
-  background-color: white;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: #ffffff;
 }
 
 /* Statistics Area */
@@ -915,38 +1007,49 @@ textarea:focus {
   padding: 30px 20px;
 }
 
+/* Rule 2: left-aligned stat cards (was text-align: center) */
 .stats-inner {
   max-width: 1280px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
-  text-align: center;
+  text-align: left;
 }
 
 .stat-card {
-  padding: 20px;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  padding: 20px 20px 20px 24px; /* consistent left indent */
+  border-radius: 0;             /* align with govuk square aesthetic */
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-top: 5px solid var(--status-assigned); /* Rule 5: blue = assigned/total */
 }
 
+/* Rule 5: stat numbers use canonical status-color vars (not hardcoded hex) */
 .stat-card h3 {
+  font-family: var(--font-sans);
   font-size: 36px;
   font-weight: 800;
-  color: #2b6cb0;
+  color: var(--status-assigned); /* blue for regular counts */
   margin-bottom: 5px;
 }
 
 .stat-card p {
-  font-size: 14px;
-  color: #4a5568;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
   margin-bottom: 0;
 }
 
+/* Compliance card: green = completed status color */
+.compliance-card {
+  border-top-color: var(--status-completed);
+}
 .compliance-card h3 {
-  color: #38a169;
+  color: var(--status-completed);
 }
 
 /* About / Info Section */
@@ -960,10 +1063,12 @@ textarea:focus {
   margin: 0 auto;
 }
 
+/* Rule 1: section headings on landing page use serif (same as govuk-heading-xl) */
 .section-heading {
-  font-size: 28px;
-  font-weight: 800;
-  color: #2d3748;
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--govuk-black);
   text-align: center;
   margin-bottom: 15px;
 }
@@ -1170,9 +1275,10 @@ textarea:focus {
 
 .login-card-wrapper {
   background-color: white;
-  border: 1px solid #cbd5e0;
-  border-radius: 12px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--border-color);
+  border-top: 5px solid var(--govuk-black);
+  border-radius: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   padding: 40px;
   width: 100%;
   max-width: 540px;
@@ -1187,59 +1293,29 @@ textarea:focus {
   font-size: 40px;
 }
 
+/* Rule 1: login card title → serif */
 .login-header h3 {
+  font-family: var(--font-serif);
   font-size: 22px;
-  font-weight: 800;
-  color: #2d3748;
+  font-weight: 700;
+  color: var(--govuk-black);
   margin: 10px 0 5px 0;
 }
 
 .login-header p {
+  font-family: var(--font-sans);
   font-size: 14px;
-  color: #718096;
+  color: var(--text-secondary);
 }
 
 .login-error-banner {
   background-color: #fff5f5;
-  border-left: 4px solid #e53e3e;
-  color: #c53030;
+  border-left: 4px solid var(--govuk-red);
+  color: var(--govuk-red);
   padding: 12px 15px;
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 20px;
-  border-radius: 4px;
-}
-
-.login-roles-tabs {
-  display: flex;
-  background-color: #edf2f7;
-  padding: 4px;
-  border-radius: 8px;
-  margin-bottom: 25px;
-}
-
-.login-role-tab {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #4a5568;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s;
-  text-align: center;
-}
-
-.login-role-tab:hover {
-  color: #2d3748;
-}
-
-.login-role-tab.active-role {
-  background-color: white;
-  color: #1a0dab;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .login-form-body {
@@ -1255,25 +1331,26 @@ textarea:focus {
 }
 
 .login-input-group label {
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
-  color: #4a5568;
+  color: var(--govuk-black);
 }
 
 .login-input-group input,
 .login-input-group select {
   padding: 10px 12px;
   font-size: 16px;
-  border: 1.5px solid #cbd5e0;
-  border-radius: 6px;
+  border: 2px solid var(--govuk-black);
+  border-radius: 0;
   outline: none;
   font-family: inherit;
 }
 
 .login-input-group input:focus,
 .login-input-group select:focus {
-  border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15) !important;
+  border-color: var(--govuk-blue);
+  box-shadow: 0 0 0 3px rgba(29, 112, 184, 0.15) !important;
   background-color: white !important;
   color: inherit !important;
   outline: none !important;
@@ -1281,26 +1358,31 @@ textarea:focus {
 
 .login-input-group .input-hint {
   font-size: 12px;
-  color: #718096;
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
+/* Rule 3: login submit uses the same govuk-button primary style */
 .login-submit-button {
-  background-color: #00703c;
-  color: white;
-  border: none;
+  background-color: var(--govuk-green);
+  color: #ffffff;
+  border: 2px solid var(--govuk-green);
+  border-bottom: 4px solid var(--govuk-green-dark);
+  font-family: var(--font-sans);
   font-size: 16px;
   font-weight: 700;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 12px 22px;
   cursor: pointer;
   margin-top: 10px;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease;
   text-align: center;
+  width: 100%;
+  border-radius: 0;
 }
 
 .login-submit-button:hover {
-  background-color: #005a30;
+  background-color: var(--govuk-green-dark);
+  border-color: var(--govuk-green-dark);
 }
 
 /* Landing Page Footer */
@@ -1351,11 +1433,84 @@ textarea:focus {
   color: #a0aec0;
 }
 
-/* Language Switcher Styling */
-.lang-switcher {
+/* =========================================================
+   DESIGN SYSTEM — Segmented Control
+   Rule 4: One component for all 2-3 option switchers.
+   Used for: role tabs, Log In/Register toggle, language toggle.
+   ========================================================= */
+.seg-control {
+  display: inline-flex;
+  background-color: #e5e7eb;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 2px;
+  align-items: stretch;
+}
+
+/* Full-width variant for form toggles */
+.seg-control--full {
   display: flex;
-  background: rgba(255, 255, 255, 0.15);
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.seg-control__btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
   border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.seg-control__btn:hover {
+  color: var(--govuk-black);
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.seg-control__btn--active {
+  background-color: #ffffff;
+  color: var(--govuk-blue);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Dark container variant — for the header language toggle on white bg */
+.seg-control--dark {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.seg-control--dark .seg-control__btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.seg-control--dark .seg-control__btn:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.seg-control--dark .seg-control__btn--active {
+  background-color: var(--govuk-blue);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+/* Legacy aliases — keep so old code doesn't break visually */
+.lang-switcher {
+  display: inline-flex;
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
   padding: 3px;
   gap: 2px;
   align-items: center;
@@ -1365,14 +1520,14 @@ textarea:focus {
 .lang-btn {
   background: transparent;
   border: none;
-  color: #a0aec0;
-  font-family: inherit;
-  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-sans);
+  font-size: 13px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 6px 12px;
   cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.2s ease;
+  border-radius: 4px;
+  transition: all 0.15s ease;
 }
 
 .lang-btn:hover {
@@ -1383,6 +1538,7 @@ textarea:focus {
 .lang-btn.active {
   background: var(--govuk-blue);
   color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 @media (max-width: 768px) {
@@ -1394,55 +1550,103 @@ textarea:focus {
 
 
 /* =========================================================
-   CITIZEN CHATBOT — Guided Assistance Panel
+   CITIZEN CHATBOT — Redesigned Guided Assistance Panel
+   Uses navy (--govuk-black) + amber (--govuk-yellow) tokens.
    All classes prefixed chatbot- to avoid conflicts.
-   Uses existing CSS variables from :root for visual consistency.
    ========================================================= */
 
-/* --- Floating Action Button (FAB) --- */
+/* --- Floating Action Button (FAB) — Circular Amber Seal --- */
 .chatbot-fab {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 9999;
-  width: 52px;
-  height: 52px;
-  background-color: var(--govuk-blue);
-  color: #ffffff;
-  border: none;
-  border-bottom: 3px solid #114d82;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--govuk-yellow) !important;
+  color: var(--govuk-black) !important;
+  border: 3px solid var(--govuk-black);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, transform 0.15s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  padding: 0;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  /* one-time scale-in pulse on first page load */
+  animation: chatbot-fab-entrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both;
+}
+
+@keyframes chatbot-fab-entrance {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .chatbot-fab:hover {
-  background-color: #114d82;
-  transform: translateY(-1px);
+  background-color: #e6c700 !important;
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 .chatbot-fab:active {
-  transform: translateY(1px);
-  border-bottom: none;
+  transform: scale(0.96);
 }
 
 .chatbot-fab:focus {
-  outline: 3px solid var(--govuk-yellow) !important;
-  outline-offset: 2px !important;
-  background-color: var(--govuk-blue) !important;
-  color: #ffffff !important;
+  outline: 3px solid var(--govuk-blue) !important;
+  outline-offset: 3px !important;
+  background-color: var(--govuk-yellow) !important;
+  color: var(--govuk-black) !important;
 }
 
 .chatbot-fab--open {
-  background-color: #0b0c0c;
-  border-bottom-color: #444;
+  background-color: var(--govuk-black) !important;
+  color: #ffffff !important;
+  border-color: var(--govuk-black);
 }
 
 .chatbot-fab--open:hover {
-  background-color: #2c2d2d;
+  background-color: #2c2d2d !important;
+}
+
+.chatbot-fab--open:focus {
+  outline: 3px solid var(--govuk-yellow) !important;
+  outline-offset: 3px !important;
+  background-color: var(--govuk-black) !important;
+  color: #ffffff !important;
+}
+
+/* Seal SVG inside FAB */
+.chatbot-fab .chatbot-seal-icon {
+  width: 32px;
+  height: 32px;
+  pointer-events: none;
+}
+
+.chatbot-fab--open .chatbot-seal-icon {
+  display: none;
+}
+
+.chatbot-fab .chatbot-close-icon {
+  display: none;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.chatbot-fab--open .chatbot-close-icon {
+  display: block;
 }
 
 /* Overdue badge on FAB */
@@ -1469,20 +1673,22 @@ textarea:focus {
 /* --- Chat Panel --- */
 .chatbot-panel {
   position: fixed;
-  bottom: 88px;
+  bottom: 96px; /* 56px FAB + 24px bottom + 16px gap */
   right: 24px;
   z-index: 9998;
-  width: 370px;
-  max-height: 560px;
+  width: 360px;
+  height: 480px;
+  max-height: calc(100vh - 140px);
   background: #ffffff;
   border: 2px solid var(--govuk-black);
-  border-bottom: 4px solid var(--govuk-blue);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
   /* Hidden state */
   opacity: 0;
-  transform: translateY(12px) scale(0.98);
+  transform: translateY(16px) scale(0.96);
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
@@ -1493,15 +1699,15 @@ textarea:focus {
   pointer-events: all;
 }
 
-/* --- Panel Header --- */
+/* --- Panel Header (navy with amber seal) --- */
 .chatbot-header {
   background: var(--govuk-black);
-  border-bottom: 4px solid var(--govuk-blue);
   padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  border-bottom: none;
 }
 
 .chatbot-header-brand {
@@ -1510,23 +1716,28 @@ textarea:focus {
   gap: 10px;
 }
 
-.chatbot-header-icon {
-  font-size: 20px;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.chatbot-header-seal {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--govuk-yellow);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
+.chatbot-header-seal svg {
+  width: 16px;
+  height: 16px;
+}
+
 .chatbot-header-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: #ffffff;
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
   line-height: 1.2;
 }
 
@@ -1548,14 +1759,26 @@ textarea:focus {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #ffffff;
-  width: 28px;
-  height: 28px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   transition: background-color 0.15s;
+  border-radius: 4px;
+}
+
+/* Restart button — smaller */
+.chatbot-header-btn--restart {
+  width: 28px;
+  height: 28px;
+}
+
+/* Close button — larger, 32×32 touch target */
+.chatbot-header-btn--close {
+  width: 32px;
+  height: 32px;
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .chatbot-header-btn:hover {
@@ -1617,16 +1840,22 @@ textarea:focus {
 }
 
 .chatbot-avatar {
-  font-size: 16px;
-  width: 28px;
-  height: 28px;
-  background: var(--govuk-black);
-  border: 1px solid var(--border-color);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--govuk-yellow);
+  border: 1.5px solid var(--govuk-black);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-style: normal;
+  font-size: 12px;
+}
+
+.chatbot-avatar svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* --- Message Bubbles --- */
@@ -1642,16 +1871,18 @@ textarea:focus {
 .chatbot-bubble--bot {
   background: #ffffff;
   border: 1px solid var(--border-color);
-  border-left: 3px solid var(--govuk-blue);
+  border-left: 3px solid var(--govuk-yellow);
   color: var(--govuk-black);
+  border-radius: 0 4px 4px 0;
 }
 
 .chatbot-bubble--user {
-  background: var(--govuk-blue);
+  background: var(--govuk-black);
   color: #ffffff;
-  border: 1px solid #114d82;
+  border: 1px solid #333;
   text-align: right;
   font-weight: 500;
+  border-radius: 4px 0 4px 4px;
 }
 
 /* --- Typing Indicator --- */
@@ -1681,16 +1912,17 @@ textarea:focus {
   40% { transform: scale(1); opacity: 1; }
 }
 
-/* --- Quick-Reply Options Strip --- */
+/* --- Quick-Reply Options — Chip/Button Style --- */
 .chatbot-options {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
   border-top: 2px solid var(--govuk-black);
   max-height: 175px;
   overflow-y: auto;
   flex-shrink: 0;
-  background: #ffffff;
+  background: #f8f8f7;
 }
 
 .chatbot-options::-webkit-scrollbar {
@@ -1703,26 +1935,31 @@ textarea:focus {
 
 .chatbot-option-btn {
   background: #ffffff;
-  border: none;
-  border-bottom: 1px solid var(--border-color);
-  padding: 10px 14px;
+  border: 2px solid var(--govuk-black);
+  border-bottom-width: 3px;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--govuk-blue);
+  color: var(--govuk-black);
   cursor: pointer;
   text-align: left;
   font-family: var(--font-sans);
-  transition: background-color 0.1s;
+  transition: background-color 0.1s, border-color 0.1s;
   line-height: 1.4;
-}
-
-.chatbot-option-btn:last-child {
-  border-bottom: none;
+  border-radius: 0;
+  flex-shrink: 0;
 }
 
 .chatbot-option-btn:hover {
-  background-color: var(--govuk-light-grey);
-  text-decoration: underline;
+  background-color: var(--govuk-yellow) !important;
+  border-color: var(--govuk-black);
+  color: var(--govuk-black) !important;
+  text-decoration: none;
+}
+
+.chatbot-option-btn:active {
+  border-bottom-width: 2px;
+  padding-bottom: 7px;
 }
 
 .chatbot-option-btn:focus {
@@ -1744,17 +1981,27 @@ textarea:focus {
   flex-shrink: 0;
 }
 
+/* --- Click-outside overlay (invisible) --- */
+.chatbot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  background: transparent;
+}
+
 /* --- Responsive: narrower panel on small screens --- */
 @media (max-width: 480px) {
   .chatbot-panel {
-    width: calc(100vw - 20px);
-    right: 10px;
-    bottom: 76px;
-    max-height: 70vh;
+    width: calc(100vw - 32px);
+    right: 16px;
+    bottom: 96px;
+    height: 420px;
+    max-height: calc(100vh - 130px);
   }
 
   .chatbot-fab {
-    right: 14px;
-    bottom: 14px;
+    right: 16px;
+    bottom: 16px;
   }
 }
+

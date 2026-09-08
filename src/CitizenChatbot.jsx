@@ -1,6 +1,5 @@
 /**
  * CitizenChatbot.jsx
- *
  * A rule-based, decision-tree guided assistance chatbot for the Citizen portal
  * of the Municipal Complaint Management System (MCMSystem).
  *
@@ -17,7 +16,7 @@
  *  - State: isOpen, messages[], currentNode, awaitingTicketInput, ticketInputValue
  *  - Quick-reply buttons drive navigation; free-text input is only surfaced
  *    for the ticket-number lookup flow.
- */
+ **/
 
 import { useState, useEffect, useRef, useContext, useCallback } from "react";
 import { AppContext } from "./AppContext";
@@ -262,6 +261,35 @@ function getStatusMessage(myComplaints) {
 }
 
 // ---------------------------------------------------------------------------
+// SEAL ICON COMPONENT (Circular amber municipal seal)
+// ---------------------------------------------------------------------------
+function SealIcon({ size = 28, color = "currentColor" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 9.5l9-6 9 6v1.5H3V9.5z" fill={color} fillOpacity="0.2" />
+      <path d="M3 9.5l9-6 9 6v1.5H3V9.5z" />
+      <line x1="4" y1="21" x2="20" y2="21" />
+      <line x1="6" y1="11" x2="6" y2="18" />
+      <line x1="10" y1="11" x2="10" y2="18" />
+      <line x1="14" y1="11" x2="14" y2="18" />
+      <line x1="18" y1="11" x2="18" y2="18" />
+      <line x1="4" y1="18" x2="20" y2="18" />
+      <circle cx="12" cy="7" r="1" fill={color} />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // CHATBOT COMPONENT
 // ---------------------------------------------------------------------------
 export default function CitizenChatbot() {
@@ -275,6 +303,8 @@ export default function CitizenChatbot() {
   const [hasGreeted, setHasGreeted] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const panelRef = useRef(null);
+  const fabRef = useRef(null);
 
   // Complaints belonging to this citizen
   const myComplaints = complaints.filter((c) => c.citizenEmail === user?.email);
@@ -295,6 +325,38 @@ export default function CitizenChatbot() {
       setHasGreeted(true);
     }
   }, [isOpen, hasGreeted]);
+
+  // Click-outside and Escape key listener to close panel
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleClickOutside(event) {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(event.target) &&
+        fabRef.current &&
+        !fabRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   // Resolve the message for a node (status lookup is dynamic)
   const resolveMessage = useCallback(
@@ -370,29 +432,36 @@ export default function CitizenChatbot() {
 
   return (
     <>
+      {/* Click-outside backdrop overlay */}
+      {isOpen && (
+        <div
+          className="chatbot-overlay"
+          onClick={handleClose}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ------------------------------------------------------------------ */}
-      {/* FLOATING ACTION BUTTON                                              */}
+      {/* FLOATING ACTION BUTTON — 56×56 Circular Amber Seal                */}
       {/* ------------------------------------------------------------------ */}
       <button
+        ref={fabRef}
         id="chatbot-fab"
         className={`chatbot-fab ${isOpen ? "chatbot-fab--open" : ""}`}
         onClick={handleToggle}
-        aria-label={isOpen ? "Close citizen assistant" : "Open citizen assistant"}
+        aria-label={isOpen ? "Close Citizen Assistant" : "Open Citizen Assistant"}
         aria-expanded={isOpen}
-        title={isOpen ? "Close assistant" : "Citizen Assistance"}
+        title={isOpen ? "Close Citizen Assistant" : "Citizen Assistant"}
       >
-        {isOpen ? (
-          // X icon when open
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square">
+        <span className="chatbot-seal-icon" aria-hidden="true">
+          <SealIcon size={28} color="var(--govuk-black)" />
+        </span>
+        <span className="chatbot-close-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
-        ) : (
-          // Chat icon when closed
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )}
+        </span>
         {!isOpen && overdueCount > 0 && (
           <span className="chatbot-fab-badge" aria-label={`${overdueCount} overdue complaint${overdueCount > 1 ? "s" : ""}`}>
             {overdueCount}
@@ -401,18 +470,21 @@ export default function CitizenChatbot() {
       </button>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CHAT PANEL                                                          */}
+      {/* CHAT PANEL — 360×480 Cohesive Branded Navy Header                 */}
       {/* ------------------------------------------------------------------ */}
       <div
+        ref={panelRef}
         className={`chatbot-panel ${isOpen ? "chatbot-panel--open" : ""}`}
         role="dialog"
         aria-modal="false"
-        aria-label="Citizen assistance chatbot"
+        aria-label="Citizen Assistant guided chat"
       >
         {/* Header */}
         <div className="chatbot-header">
           <div className="chatbot-header-brand">
-            <span className="chatbot-header-icon" aria-hidden="true">🏛️</span>
+            <div className="chatbot-header-seal" aria-hidden="true">
+              <SealIcon size={18} color="var(--govuk-black)" />
+            </div>
             <div>
               <div className="chatbot-header-title">Citizen Assistant</div>
               <div className="chatbot-header-subtitle">MCMSystem — Guided Help</div>
@@ -420,7 +492,8 @@ export default function CitizenChatbot() {
           </div>
           <div className="chatbot-header-actions">
             <button
-              className="chatbot-header-btn"
+              type="button"
+              className="chatbot-header-btn chatbot-header-btn--restart"
               onClick={handleRestart}
               title="Restart conversation"
               aria-label="Restart conversation"
@@ -431,12 +504,13 @@ export default function CitizenChatbot() {
               </svg>
             </button>
             <button
-              className="chatbot-header-btn"
+              type="button"
+              className="chatbot-header-btn chatbot-header-btn--close"
               onClick={handleClose}
-              title="Close assistant"
-              aria-label="Close assistant"
+              title="Close Citizen Assistant"
+              aria-label="Close Citizen Assistant"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -459,7 +533,9 @@ export default function CitizenChatbot() {
               className={`chatbot-bubble-wrap ${msg.role === "user" ? "chatbot-bubble-wrap--user" : "chatbot-bubble-wrap--bot"}`}
             >
               {msg.role === "bot" && (
-                <span className="chatbot-avatar" aria-hidden="true">🏛️</span>
+                <span className="chatbot-avatar" aria-hidden="true">
+                  <SealIcon size={13} color="var(--govuk-black)" />
+                </span>
               )}
               <div
                 className={`chatbot-bubble ${msg.role === "user" ? "chatbot-bubble--user" : "chatbot-bubble--bot"}`}
@@ -478,7 +554,9 @@ export default function CitizenChatbot() {
           {/* Typing indicator */}
           {isTyping && (
             <div className="chatbot-bubble-wrap chatbot-bubble-wrap--bot">
-              <span className="chatbot-avatar" aria-hidden="true">🏛️</span>
+              <span className="chatbot-avatar" aria-hidden="true">
+                <SealIcon size={13} color="var(--govuk-black)" />
+              </span>
               <div className="chatbot-bubble chatbot-bubble--bot chatbot-typing">
                 <span className="chatbot-dot" />
                 <span className="chatbot-dot" />
@@ -490,12 +568,13 @@ export default function CitizenChatbot() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick-reply options */}
+        {/* Quick-reply options — Chip/button style */}
         {!isTyping && currentOptions.length > 0 && (
           <div className="chatbot-options" role="group" aria-label="Reply options">
             {currentOptions.map((opt) => (
               <button
                 key={opt.label}
+                type="button"
                 className="chatbot-option-btn"
                 onClick={() => handleOptionClick(opt)}
               >

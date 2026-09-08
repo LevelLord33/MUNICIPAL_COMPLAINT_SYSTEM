@@ -1,5 +1,5 @@
 import { useMemo, useState, useContext } from "react";
-import { STATUSES, ticketNo } from "./shared";
+import { STATUSES, ticketNo, ComplaintFilterBar, ComplaintTable } from "./shared";
 import { AppContext } from "./AppContext";
 import { useRouter, matchRoute } from "./router";
 
@@ -15,6 +15,7 @@ export default function AdminDashboard() {
     deleteComplaint,
     addCategory,
     editCategory,
+    deleteCategory,
     submitComplaint,
     user
   } = useContext(AppContext);
@@ -24,7 +25,7 @@ export default function AdminDashboard() {
   // Sub-page states
   const [filterCategory, setFilterCategory] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
-  
+
   // Register officer fields
   const [newOfficerName, setNewOfficerName] = useState("");
   const [newOfficerEmail, setNewOfficerEmail] = useState("");
@@ -55,6 +56,15 @@ export default function AdminDashboard() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCatName, setEditingCatName] = useState("");
   const [editedCatName, setEditedCatName] = useState("");
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState(null);
+
+  // Manage Officers — inline delete confirm
+  const [confirmDeleteOfficerId, setConfirmDeleteOfficerId] = useState(null);
+
+  // Admin Profile edit state
+  const [adminPhone, setAdminPhone] = useState(user.phone || "+91 94421 00000");
+  const [adminNewPassword, setAdminNewPassword] = useState("");
+  const [adminProfileSuccess, setAdminProfileSuccess] = useState(false);
 
   // Calculate system-wide stats
   const stats = useMemo(() => {
@@ -98,7 +108,7 @@ export default function AdminDashboard() {
     let list = complaints.filter((c) => {
       const categoryOk = filterCategory === "All" || c.category === filterCategory;
       const statusOk = filterStatus === "All" || c.status === filterStatus;
-      
+
       const query = searchQuery.trim().toLowerCase();
       const matchesSearch =
         !query ||
@@ -229,11 +239,10 @@ export default function AdminDashboard() {
             <div>
               <span className="govuk-hint">Current Status</span>
               <div>
-                <span className={`govuk-tag ${
-                  complaint.status === "Completed" ? "govuk-tag--green" :
+                <span className={`govuk-tag ${complaint.status === "Completed" ? "govuk-tag--green" :
                   complaint.status === "In Progress" ? "govuk-tag--orange" :
-                  complaint.status === "Assigned" ? "govuk-tag--purple" : "govuk-tag--blue"
-                }`}>
+                    complaint.status === "Assigned" ? "govuk-tag--purple" : "govuk-tag--blue"
+                  }`}>
                   {complaint.status}
                 </span>
               </div>
@@ -347,123 +356,77 @@ export default function AdminDashboard() {
 
   // 2. All Complaints Page
   if (hash.includes("/admin/complaints")) {
+    // Admin-specific extra column: Assigned Officer
+    const officerExtraCol = [{
+      header: "Assigned Officer",
+      render: (c) => (
+        <span style={{ color: c.assignedOfficer ? "inherit" : "var(--text-secondary)" }}>
+          {c.assignedOfficer || "Unassigned"}
+        </span>
+      )
+    }];
+
+    // Admin extra controls: Sort By + Bulk Close
+    const adminExtraControls = (
+      <>
+        <div style={{ flex: "0 0 auto" }}>
+          <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="admin-sort">Sort By</label>
+          <select className="govuk-select" id="admin-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="newest">Newest</option>
+            <option value="priority">Highest Severity</option>
+            <option value="status">Status Order</option>
+          </select>
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end" }}>
+          <button
+            type="button"
+            className="govuk-button govuk-button--warning"
+            style={{ marginBottom: 0 }}
+            onClick={() => {
+              const completedTickets = complaints.filter((c) => c.status === "Completed");
+              if (completedTickets.length === 0) {
+                alert("No Completed tickets are available to close.");
+                return;
+              }
+              if (window.confirm(`Mass-Action Confirmation: Are you sure you want to close all ${completedTickets.length} completed tickets? This will write distinct audit logs for each ticket.`)) {
+                completedTickets.forEach((c) => {
+                  updateStatus(c.complaintId, "Closed", "Mass-closed via Admin bulk close tool.");
+                });
+                alert(`Mass-action completed. Closed ${completedTickets.length} tickets.`);
+              }
+            }}
+          >
+            Bulk Close Completed
+          </button>
+        </div>
+      </>
+    );
+
     return (
       <div>
         <h2 className="govuk-heading-xl">Grievance Registry Records</h2>
         <p className="govuk-body">Manage municipal workloads, status updates, and assign action officers.</p>
 
-        {/* Filter / Search panel */}
-        <div style={{ background: "#ffffff", padding: "20px", border: "1px solid var(--border-color)", marginBottom: "30px" }}>
-          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-            <div style={{ flex: "2 1 300px" }}>
-              <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="search">Search Archive</label>
-              <input
-                className="govuk-input"
-                id="search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ID, Title, Citizen, Location..."
-              />
-            </div>
-            <div>
-              <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="category">Category</label>
-              <select className="govuk-select" id="category" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-                <option value="All">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="status">Status</label>
-              <select className="govuk-select" id="status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                <option value="All">All Statuses</option>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="sort">Sort By</label>
-              <select className="govuk-select" id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="newest">Newest</option>
-                <option value="priority">Highest Severity</option>
-                <option value="status">Status Order</option>
-              </select>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end" }}>
-              <button
-                type="button"
-                className="govuk-button govuk-button--warning"
-                style={{ marginBottom: 0 }}
-                onClick={() => {
-                  const completedTickets = complaints.filter((c) => c.status === "Completed");
-                  if (completedTickets.length === 0) {
-                    alert("No Completed tickets are available to close.");
-                    return;
-                  }
-                  if (window.confirm(`Mass-Action Confirmation: Are you sure you want to close all ${completedTickets.length} completed tickets? This will write distinct audit logs for each ticket.`)) {
-                    completedTickets.forEach((c) => {
-                      updateStatus(c.complaintId, "Closed", "Mass-closed via Admin bulk close tool.");
-                    });
-                    alert(`Mass-action completed. Closed ${completedTickets.length} tickets.`);
-                  }
-                }}
-              >
-                Bulk Close Completed
-              </button>
-            </div>
-          </div>
-        </div>
+        <ComplaintFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filterCategory={filterCategory}
+          onCategoryChange={setFilterCategory}
+          categories={categories}
+          filterStatus={filterStatus}
+          onStatusChange={setFilterStatus}
+          searchPlaceholder="ID, Title, Citizen, Location..."
+          searchLabel="Search Archive"
+          extraControls={adminExtraControls}
+        />
 
-        <table className="govuk-table">
-          <thead>
-            <tr>
-              <th className="govuk-table__header">Ticket ID</th>
-              <th className="govuk-table__header">Title</th>
-              <th className="govuk-table__header">Category</th>
-              <th className="govuk-table__header">Priority</th>
-              <th className="govuk-table__header">Assigned Officer</th>
-              <th className="govuk-table__header">Status</th>
-              <th className="govuk-table__header">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedComplaints.map((c) => (
-              <tr className="govuk-table__row" key={c.complaintId}>
-                <td className="govuk-table__cell" style={{ fontWeight: "700" }}>{ticketNo(c.complaintId)}</td>
-                <td className="govuk-table__cell">{c.title}</td>
-                <td className="govuk-table__cell">{c.category}</td>
-                <td className="govuk-table__cell">{c.priority}</td>
-                <td className="govuk-table__cell" style={{ color: c.assignedOfficer ? "inherit" : "var(--text-secondary)" }}>
-                  {c.assignedOfficer || "Unassigned"}
-                </td>
-                <td className="govuk-table__cell">
-                  <span className={`govuk-tag ${
-                    c.status === "Completed" ? "govuk-tag--green" :
-                    c.status === "In Progress" ? "govuk-tag--orange" :
-                    c.status === "Assigned" ? "govuk-tag--purple" : "govuk-tag--blue"
-                  }`}>
-                    {c.status}
-                  </span>
-                </td>
-                <td className="govuk-table__cell">
-                  <button className="govuk-button govuk-button--secondary" style={{ padding: "4px 8px", fontSize: "14px" }} onClick={() => navigate(`#/admin/complaint/${c.complaintId}`)}>
-                    View & Action
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {paginatedComplaints.length === 0 && (
-              <tr>
-                <td className="govuk-table__cell" colSpan={7} style={{ textAlign: "center" }}>
-                  No complaints found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <ComplaintTable
+          complaints={paginatedComplaints}
+          extraColumns={officerExtraCol}
+          emptyMessage="No complaints found."
+          onAction={(c) => navigate(`#/admin/complaint/${c.complaintId}`)}
+          actionLabel="View & Action"
+        />
 
         {processedComplaints.length > visibleCount && (
           <div style={{ textAlign: "center", marginTop: "20px" }}>
@@ -505,6 +468,9 @@ export default function AdminDashboard() {
 
     return (
       <div>
+        <a onClick={() => navigate("#/admin/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">Register Grievance (On Behalf of Citizen)</h2>
         <p className="govuk-body">Register a new municipal complaint on behalf of a citizen who has reported an issue via phone or in-person walk-in. The record will be clearly logged as filed by the Administrator.</p>
 
@@ -624,15 +590,19 @@ export default function AdminDashboard() {
   if (hash.includes("/admin/officers")) {
     return (
       <div>
+        <a onClick={() => navigate("#/admin/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">Manage Department Officers</h2>
         <p className="govuk-body">Register profiles and overview active workloads.</p>
 
-        {/* Add Officer form */}
+        {/* Add Officer form — consistent 2-field-per-row grid */}
         <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", marginBottom: "30px" }}>
           <h3 className="govuk-heading-m">Register New Officer Profile</h3>
           <form onSubmit={handleAddOfficerSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-            <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
-              <div className="govuk-form-group" style={{ flex: 1, minWidth: "200px", padding: 0, border: "none", marginBottom: 0 }}>
+            {/* Row 1: Name + Designation */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+              <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: 0 }}>
                 <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="officer-name">Officer Full Name</label>
                 <input
                   className="govuk-input"
@@ -644,8 +614,8 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
-              <div className="govuk-form-group" style={{ flex: 1, minWidth: "200px", padding: 0, border: "none", marginBottom: 0 }}>
-                <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="officer-designation">Designation</label>
+              <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: 0 }}>
+                <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="officer-designation">Designation / Title</label>
                 <input
                   className="govuk-input"
                   id="officer-designation"
@@ -658,8 +628,9 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
-              <div className="govuk-form-group" style={{ flex: 1, minWidth: "200px", padding: 0, border: "none", marginBottom: 0 }}>
+            {/* Row 2: Email + Phone */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+              <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: 0 }}>
                 <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="officer-email">Official Email</label>
                 <input
                   className="govuk-input"
@@ -671,7 +642,7 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
-              <div className="govuk-form-group" style={{ flex: 1, minWidth: "200px", padding: 0, border: "none", marginBottom: 0 }}>
+              <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: 0 }}>
                 <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="officer-phone">Mobile Phone</label>
                 <input
                   className="govuk-input"
@@ -683,7 +654,11 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
-              <div className="govuk-form-group" style={{ flex: 1, minWidth: "200px", padding: 0, border: "none", marginBottom: 0 }}>
+            </div>
+
+            {/* Row 3: Department (half-width) + Submit */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", alignItems: "flex-end" }}>
+              <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: 0 }}>
                 <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="officer-dept">Assigned Department</label>
                 <select
                   className="govuk-select"
@@ -696,11 +671,11 @@ export default function AdminDashboard() {
                   ))}
                 </select>
               </div>
-            </div>
-            <div>
-              <button type="submit" className="govuk-button" style={{ marginBottom: 0 }}>
-                Register Officer
-              </button>
+              <div>
+                <button type="submit" className="govuk-button" style={{ marginBottom: 0, width: "100%" }}>
+                  Register Officer
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -710,6 +685,7 @@ export default function AdminDashboard() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
           {officers.map((officer) => {
             const count = officerWorkloads[officer.name] || 0;
+            const isPendingDelete = confirmDeleteOfficerId === officer.officerId;
             return (
               <div key={officer.officerId || officer.name} style={{ background: "#ffffff", padding: "20px", border: "1px solid var(--border-color)", borderTop: "5px solid var(--govuk-black)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <div>
@@ -720,28 +696,55 @@ export default function AdminDashboard() {
                   <p className="govuk-body-s" style={{ margin: "2px 0" }}><strong>Phone:</strong> {officer.phone}</p>
                 </div>
                 <div style={{ borderTop: "1px solid #ccc", marginTop: "15px", paddingTop: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                     <span>Active Tasks:</span>
                     <span className={`govuk-tag ${count > 3 ? "govuk-tag--red" : "govuk-tag--green"}`} style={{ fontSize: "16px" }}>
                       {count}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="govuk-button govuk-button--warning"
-                    style={{ width: "100%", padding: "4px 8px", fontSize: "14px", marginBottom: 0 }}
-                    onClick={() => {
-                      if (count > 0) {
-                        alert(`Cannot delete officer ${officer.name} because they have ${count} active assignments. Reassign their tasks first.`);
-                        return;
-                      }
-                      if (window.confirm(`Are you sure you want to delete officer profile for ${officer.name}?`)) {
-                        deleteOfficer(officer.officerId);
-                      }
-                    }}
-                  >
-                    Delete Officer
-                  </button>
+
+                  {isPendingDelete ? (
+                    <div style={{ background: "#fff2f2", border: "1px solid #d4351c", borderRadius: "4px", padding: "10px" }}>
+                      <p className="govuk-body-s" style={{ margin: "0 0 8px", fontWeight: "700", color: "#d4351c" }}>
+                        Remove officer {officer.name}?
+                      </p>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button
+                          type="button"
+                          className="govuk-button"
+                          style={{ background: "#d4351c", marginBottom: 0, padding: "4px 12px", fontSize: "14px" }}
+                          onClick={() => { deleteOfficer(officer.officerId); setConfirmDeleteOfficerId(null); }}
+                        >
+                          Yes, Remove
+                        </button>
+                        <button
+                          type="button"
+                          className="govuk-button govuk-button--secondary"
+                          style={{ marginBottom: 0, padding: "4px 12px", fontSize: "14px" }}
+                          onClick={() => setConfirmDeleteOfficerId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        className="govuk-button govuk-button--secondary"
+                        style={{ padding: "4px 10px", fontSize: "13px", marginBottom: 0, color: "#d4351c", borderColor: "#d4351c" }}
+                        onClick={() => {
+                          if (count > 0) {
+                            alert(`Cannot remove ${officer.name}: they have ${count} active assignment(s). Reassign or close those tasks first.`);
+                            return;
+                          }
+                          setConfirmDeleteOfficerId(officer.officerId);
+                        }}
+                      >
+                        Remove Officer
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -755,6 +758,9 @@ export default function AdminDashboard() {
   if (hash.includes("/admin/departments")) {
     return (
       <div>
+        <a onClick={() => navigate("#/admin/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">Manage Departments &amp; Categories</h2>
         <p className="govuk-body">Register and modify services, utility categories, and departmental routings.</p>
 
@@ -780,51 +786,110 @@ export default function AdminDashboard() {
           </form>
         </div>
 
-        {/* Edit Category List */}
+        {/* Edit / Delete Category List */}
         <h3 className="govuk-heading-m">Active Services List</h3>
         <table className="govuk-table">
           <thead>
             <tr>
               <th className="govuk-table__header">Category Name</th>
-              <th className="govuk-table__header">Total Complaints</th>
+              <th className="govuk-table__header" style={{ textAlign: "right" }}>Total Complaints</th>
               <th className="govuk-table__header">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {categories.map((cat) => (
-              <tr className="govuk-table__row" key={cat}>
-                <td className="govuk-table__cell">
-                  {editingCatName === cat ? (
-                    <form onSubmit={(e) => handleEditCategorySubmit(e, cat)} style={{ display: "flex", gap: "10px" }}>
-                      <input
-                        className="govuk-input"
-                        type="text"
-                        value={editedCatName}
-                        onChange={(e) => setEditedCatName(e.target.value)}
-                        required
-                        style={{ maxWidth: "200px", padding: "4px 8px", fontSize: "14px" }}
-                      />
-                      <button type="submit" className="govuk-button" style={{ padding: "4px 8px", fontSize: "12px" }}>
-                        Save
-                      </button>
-                      <button type="button" className="govuk-button govuk-button--secondary" style={{ padding: "4px 8px", fontSize: "12px" }} onClick={() => setEditingCatName("")}>
-                        Cancel
-                      </button>
-                    </form>
-                  ) : (
-                    <strong style={{ fontSize: "18px" }}>{cat}</strong>
-                  )}
-                </td>
-                <td className="govuk-table__cell">{categoryStats[cat] || 0} registered</td>
-                <td className="govuk-table__cell">
-                  {editingCatName !== cat && (
-                    <button className="govuk-button govuk-button--secondary" style={{ padding: "4px 8px", fontSize: "14px" }} onClick={() => { setEditingCatName(cat); setEditedCatName(cat); }}>
-                      Edit Name
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {categories.map((cat) => {
+              const totalForCat = categoryStats[cat] || 0;
+              const activeForCat = complaints.filter(
+                (c) => c.category === cat && !["Completed", "Closed"].includes(c.status)
+              ).length;
+
+              if (confirmDeleteCat === cat) {
+                return (
+                  <tr className="govuk-table__row" key={cat} style={{ background: "#fff2f2" }}>
+                    <td className="govuk-table__cell" colSpan={3}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                        <span className="govuk-body" style={{ fontWeight: "700", color: "#d4351c", margin: 0 }}>
+                          Remove category "{cat}"?
+                        </span>
+                        <button
+                          type="button"
+                          className="govuk-button"
+                          style={{ background: "#d4351c", marginBottom: 0, padding: "4px 12px", fontSize: "14px" }}
+                          onClick={() => { deleteCategory(cat); setConfirmDeleteCat(null); }}
+                        >
+                          Yes, Remove
+                        </button>
+                        <button
+                          type="button"
+                          className="govuk-button govuk-button--secondary"
+                          style={{ marginBottom: 0, padding: "4px 12px", fontSize: "14px" }}
+                          onClick={() => setConfirmDeleteCat(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              return (
+                <tr className="govuk-table__row" key={cat}>
+                  <td className="govuk-table__cell">
+                    {editingCatName === cat ? (
+                      <form onSubmit={(e) => handleEditCategorySubmit(e, cat)} style={{ display: "flex", gap: "10px" }}>
+                        <input
+                          className="govuk-input"
+                          type="text"
+                          value={editedCatName}
+                          onChange={(e) => setEditedCatName(e.target.value)}
+                          required
+                          style={{ maxWidth: "200px", padding: "4px 8px", fontSize: "14px" }}
+                        />
+                        <button type="submit" className="govuk-button" style={{ padding: "4px 8px", fontSize: "12px" }}>
+                          Save
+                        </button>
+                        <button type="button" className="govuk-button govuk-button--secondary" style={{ padding: "4px 8px", fontSize: "12px" }} onClick={() => setEditingCatName("")}>
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <strong style={{ fontSize: "18px" }}>{cat}</strong>
+                    )}
+                  </td>
+                  <td className="govuk-table__cell" style={{ textAlign: "right" }}>{totalForCat} registered</td>
+                  <td className="govuk-table__cell">
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {editingCatName !== cat && (
+                        <button
+                          className="govuk-button govuk-button--secondary"
+                          style={{ padding: "4px 8px", fontSize: "14px", marginBottom: 0 }}
+                          onClick={() => { setEditingCatName(cat); setEditedCatName(cat); }}
+                        >
+                          Edit Name
+                        </button>
+                      )}
+                      {editingCatName !== cat && (
+                        <button
+                          type="button"
+                          className="govuk-button govuk-button--secondary"
+                          style={{ padding: "4px 8px", fontSize: "14px", marginBottom: 0, color: "#d4351c", borderColor: "#d4351c" }}
+                          onClick={() => {
+                            if (activeForCat > 0) {
+                              alert(`Cannot remove "${cat}": there are ${activeForCat} active complaint(s) linked to this category. Resolve or reassign them first.`);
+                              return;
+                            }
+                            setConfirmDeleteCat(cat);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -835,14 +900,17 @@ export default function AdminDashboard() {
   if (hash.includes("/admin/reports")) {
     return (
       <div>
+        <a onClick={() => navigate("#/admin/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">System Analytics Report</h2>
         <p className="govuk-body">Overview resolution metrics, trend indexes and department response performance.</p>
 
-        {/* Categories charts */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", marginBottom: "30px" }}>
-          <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)" }}>
+        {/* Category + Status charts — equal height panels */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", marginBottom: "30px", alignItems: "stretch" }}>
+          <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column" }}>
             <h3 className="govuk-heading-m">Complaints by Category</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
               {categories.map((cat) => {
                 const count = categoryStats[cat] || 0;
                 const percentage = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
@@ -861,9 +929,9 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)" }}>
+          <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column" }}>
             <h3 className="govuk-heading-m">Resolution Status Load</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px", flex: 1, justifyContent: "space-between" }}>
               {STATUSES.map((status) => {
                 const count = stats.byStatus[status] || 0;
                 const percentage = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
@@ -914,16 +982,75 @@ export default function AdminDashboard() {
   if (hash.includes("/admin/profile")) {
     return (
       <div>
+        <a onClick={() => navigate("#/admin/overview")} className="govuk-body" style={{ textDecoration: "underline", color: "var(--govuk-blue)", cursor: "pointer", display: "inline-block", marginBottom: "20px", fontWeight: "600" }}>
+          ← Back to dashboard overview
+        </a>
         <h2 className="govuk-heading-xl">Administrator Profile</h2>
-        <p className="govuk-body">System Administrator details and account config.</p>
+        <p className="govuk-body">Manage your account details and security credentials.</p>
 
-        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)" }}>
-          <h3 className="govuk-heading-m">Account Credentials</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "10px" }}>
-            <strong>Operator:</strong> <span>{user.name}</span>
+        {/* Read-only identity section */}
+        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", marginBottom: "30px" }}>
+          <h3 className="govuk-heading-m">Official Details</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "10px", marginBottom: "0" }}>
+            <strong>Full Name:</strong> <span>{user.name}</span>
             <strong>Official Email:</strong> <span>{user.email}</span>
-            <strong>Permission Level:</strong> <span>Full Overlord / Admin</span>
+            <strong>Role:</strong> <span>Municipal Administrator — Full System Access</span>
+            <strong>Jurisdiction:</strong> <span>Kovilpatti Municipal Corporation</span>
           </div>
+        </div>
+
+        {/* Editable contact & security section */}
+        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)" }}>
+          <h3 className="govuk-heading-m">Contact &amp; Security</h3>
+
+          {adminProfileSuccess && (
+            <div className="govuk-notification-banner" style={{ border: "5px solid var(--govuk-green)", marginBottom: "20px" }}>
+              <div className="govuk-notification-banner__header" style={{ backgroundColor: "var(--govuk-green)" }}>
+                <span className="govuk-notification-banner__title">Success</span>
+              </div>
+              <div className="govuk-notification-banner__content">
+                <p className="govuk-body" style={{ fontWeight: "700" }}>Profile updated successfully.</p>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+            <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: 0 }}>
+              <label className="govuk-label" htmlFor="admin-phone">Official Mobile Phone</label>
+              <span className="govuk-hint">Your contact number for municipal communications.</span>
+              <input
+                className="govuk-input"
+                id="admin-phone"
+                type="text"
+                value={adminPhone}
+                onChange={(e) => setAdminPhone(e.target.value)}
+              />
+            </div>
+            <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: 0 }}>
+              <label className="govuk-label" htmlFor="admin-password">New Password</label>
+              <span className="govuk-hint">Leave blank to keep your current password unchanged.</span>
+              <input
+                className="govuk-input"
+                id="admin-password"
+                type="password"
+                value={adminNewPassword}
+                onChange={(e) => setAdminNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+            </div>
+          </div>
+
+          <button
+            className="govuk-button"
+            type="button"
+            onClick={() => {
+              setAdminNewPassword("");
+              setAdminProfileSuccess(true);
+              setTimeout(() => setAdminProfileSuccess(false), 3000);
+            }}
+          >
+            Save Changes
+          </button>
         </div>
       </div>
     );

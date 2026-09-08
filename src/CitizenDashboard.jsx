@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useContext, useEffect } from "react";
-import { STATUSES, ticketNo } from "./shared";
+import { STATUSES, ticketNo, ComplaintFilterBar, ComplaintTable } from "./shared";
 import { AppContext } from "./AppContext";
 import { useRouter, matchRoute } from "./router";
 import CitizenChatbot from "./CitizenChatbot";
@@ -48,6 +48,7 @@ export default function CitizenDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [overviewCategory, setOverviewCategory] = useState("All");
 
   // UX states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -205,6 +206,13 @@ export default function CitizenDashboard() {
       return categoryOk && statusOk && matchesSearch;
     });
   }, [myComplaints, filterCategory, filterStatus, searchQuery]);
+
+  // Category filter for Overview tab
+  const filteredOverviewComplaints = useMemo(() => {
+    return myComplaints.filter((c) => {
+      return overviewCategory === "All" || c.category === overviewCategory;
+    });
+  }, [myComplaints, overviewCategory]);
 
   // Route matches
   const matchDetail = matchRoute("/citizen/complaint/:id", hash);
@@ -433,7 +441,7 @@ export default function CitizenDashboard() {
             <label className="govuk-label" htmlFor="cat">
               {t("comp_cat_label")}
             </label>
-            <span className="govuk-hint">{t("comp_cat_label")}</span>
+            <span className="govuk-hint">{t("comp_cat_hint")}</span>
             <select className="govuk-select" id="cat" value={category} onChange={(e) => setCategory(e.target.value)}>
               {categories.map((c) => (
                 <option key={c} value={c}>{t(c)}</option>
@@ -445,7 +453,7 @@ export default function CitizenDashboard() {
             <label className="govuk-label" htmlFor="priority">
               {t("comp_prio_label")}
             </label>
-            <span className="govuk-hint">{t("comp_prio_label")}</span>
+            <span className="govuk-hint">{t("comp_prio_hint")}</span>
             <select className="govuk-select" id="priority" value={priority} onChange={(e) => setPriority(e.target.value)}>
               <option value="Low">{t("Low")}</option>
               <option value="Medium">{t("Medium")}</option>
@@ -473,7 +481,7 @@ export default function CitizenDashboard() {
             <label className="govuk-label">
               {t("photo_label")}
             </label>
-            <span className="govuk-hint">{t("photo_label")}</span>
+            <span className="govuk-hint">{t("photo_hint")}</span>
             
             <div
               className={`govuk-file-upload-box ${dragActive ? "drag-active" : ""}`}
@@ -570,90 +578,24 @@ export default function CitizenDashboard() {
         <h2 className="govuk-heading-xl">{t("my_complaints_title")}</h2>
         <p className="govuk-body">{t("my_complaints_sub")}</p>
 
-        {/* Filter controls */}
-        <div style={{ background: "#ffffff", padding: "20px", border: "1px solid var(--border-color)", marginBottom: "30px" }}>
-          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: "200px" }}>
-              <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="search">{t("search_placeholder").split("...")[0]}</label>
-              <input
-                className="govuk-input"
-                id="search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("search_placeholder")}
-              />
-            </div>
-            <div>
-              <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="category">{t("filter_cat")}</label>
-              <select className="govuk-select" id="category" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-                <option value="All">{t("all_categories")}</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>{t(c)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="govuk-label" style={{ fontSize: "16px" }} htmlFor="status">{t("filter_status")}</label>
-              <select className="govuk-select" id="status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                <option value="All">{t("all_statuses")}</option>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{t(s)}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+        <ComplaintFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filterCategory={filterCategory}
+          onCategoryChange={setFilterCategory}
+          categories={categories}
+          filterStatus={filterStatus}
+          onStatusChange={setFilterStatus}
+          searchPlaceholder={t("search_placeholder")}
+          searchLabel={t("search_placeholder").split("...")[0]}
+        />
 
-        <table className="govuk-table">
-          <thead>
-            <tr>
-              <th className="govuk-table__header">{t("ticket")}</th>
-              <th className="govuk-table__header">{t("comp_title_label")}</th>
-              <th className="govuk-table__header">{t("category_label")}</th>
-              <th className="govuk-table__header">{t("comp_loc_label")}</th>
-              <th className="govuk-table__header">{t("priority_label")}</th>
-              <th className="govuk-table__header">{t("status_label")}</th>
-              <th className="govuk-table__header">{t("actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMyComplaints.map((c) => (
-              <tr className="govuk-table__row" key={c.complaintId}>
-                <td className="govuk-table__cell" style={{ fontWeight: "700" }}>{ticketNo(c.complaintId)}</td>
-                <td className="govuk-table__cell">{c.title}</td>
-                <td className="govuk-table__cell">{t(c.category)}</td>
-                <td className="govuk-table__cell">{c.location}</td>
-                <td className="govuk-table__cell">
-                  <span style={{ fontWeight: c.priority === "High" ? "700" : "400", color: c.priority === "High" ? "var(--govuk-red)" : "inherit" }}>
-                    {t(c.priority)}
-                  </span>
-                </td>
-                <td className="govuk-table__cell">
-                  <span className={`govuk-tag ${
-                    c.status === "Completed" ? "govuk-tag--green" :
-                    c.status === "In Progress" ? "govuk-tag--orange" :
-                    c.status === "Assigned" ? "govuk-tag--purple" : "govuk-tag--blue"
-                  }`}>
-                    {t(c.status)}
-                  </span>
-                </td>
-                <td className="govuk-table__cell">
-                  <button className="govuk-button govuk-button--secondary" style={{ padding: "4px 8px", fontSize: "14px" }} onClick={() => navigate(`#/citizen/complaint/${c.complaintId}`)}>
-                    {t("view_details")}
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {filteredMyComplaints.length === 0 && (
-              <tr>
-                <td className="govuk-table__cell" colSpan={7} style={{ textAlign: "center" }}>
-                  {t("no_matching_complaints")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <ComplaintTable
+          complaints={filteredMyComplaints}
+          emptyMessage={t("no_matching_complaints")}
+          onAction={(c) => navigate(`#/citizen/complaint/${c.complaintId}`)}
+          actionLabel={t("view_details")}
+        />
       </div>
       <CitizenChatbot />
     </>
@@ -671,13 +613,22 @@ export default function CitizenDashboard() {
 
         <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", marginBottom: "30px" }}>
           <h3 className="govuk-heading-m">{t("my_profile_title")}</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "10px", marginBottom: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "10px", marginBottom: "25px" }}>
             <strong>{t("full_name")}:</strong> <span>{user.name}</span>
             <strong>{t("email_address")}:</strong> <span>{user.email}</span>
-            <strong>{t("demo_password")}:</strong> <span>{t("citizen")}</span>
+            {user.phone && (
+              <>
+                <strong>Phone Number:</strong> <span>{user.phone}</span>
+              </>
+            )}
+            {user.address && (
+              <>
+                <strong>Residential Address:</strong> <span>{user.address}</span>
+              </>
+            )}
           </div>
 
-          <h3 className="govuk-heading-m">{t("demo_password")}</h3>
+          <h3 className="govuk-heading-m">{t("account_password")}</h3>
           {profileSuccess && (
             <div className="govuk-notification-banner" style={{ border: "5px solid var(--govuk-green)" }}>
               <div className="govuk-notification-banner__header" style={{ backgroundColor: "var(--govuk-green)" }}>
@@ -686,10 +637,11 @@ export default function CitizenDashboard() {
             </div>
           )}
 
-          <div className="govuk-form-group" style={{ padding: 0, border: "none" }}>
+          <div className="govuk-form-group" style={{ padding: 0, border: "none", marginBottom: "20px" }}>
             <label className="govuk-label" htmlFor="profile-pass">
-              {t("demo_password")}
+              {t("account_password")}
             </label>
+            <span className="govuk-hint">{t("change_password_hint")}</span>
             <input
               className="govuk-input"
               id="profile-pass"
@@ -734,28 +686,45 @@ export default function CitizenDashboard() {
         </div>
       </div>
 
-      <h3 className="govuk-heading-l">{t("recent_activity")}</h3>
-      {myComplaints.length > 0 ? (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "15px" }}>
+        <h3 className="govuk-heading-l" style={{ margin: 0 }}>{t("recent_activity")}</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <label htmlFor="overview-category-filter" className="govuk-label" style={{ margin: 0, fontSize: "14px", fontWeight: "600" }}>
+            {t("filter_cat")}:
+          </label>
+          <select
+            id="overview-category-filter"
+            className="govuk-select"
+            style={{ width: "auto", minWidth: "150px", padding: "6px 10px", fontSize: "14px" }}
+            value={overviewCategory}
+            onChange={(e) => setOverviewCategory(e.target.value)}
+          >
+            <option value="All">{t("all_categories")}</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{t(c)}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {filteredOverviewComplaints.length > 0 ? (
         <div style={{ background: "#ffffff", padding: "20px", border: "1px solid var(--border-color)" }}>
-          <p className="govuk-body">{t("ticket")}: <strong>{ticketNo(myComplaints[0].complaintId)}</strong>: "{myComplaints[0].title}".</p>
-          <span className="govuk-hint">{t("status_label")}: {t(myComplaints[0].status)} ({t("date_filed")}: {myComplaints[0].createdAt})</span>
+          <p className="govuk-body">{t("ticket")}: <strong>{ticketNo(filteredOverviewComplaints[0].complaintId)}</strong>: "{filteredOverviewComplaints[0].title}".</p>
+          <span className="govuk-hint">{t("status_label")}: {t(filteredOverviewComplaints[0].status)} ({t("date_filed")}: {filteredOverviewComplaints[0].createdAt})</span>
           <div style={{ marginTop: "15px" }}>
-            <button className="govuk-button govuk-button--secondary" onClick={() => navigate(`#/citizen/complaint/${myComplaints[0].complaintId}`)}>
+            <button className="govuk-button govuk-button--secondary" onClick={() => navigate(`#/citizen/complaint/${filteredOverviewComplaints[0].complaintId}`)}>
               {t("view_details")}
             </button>
           </div>
         </div>
       ) : (
-        <div className="govuk-notification-banner">
-          <div className="govuk-notification-banner__header">
-            <span className="govuk-notification-banner__title">{t("all_categories")}</span>
-          </div>
-          <div className="govuk-notification-banner__content">
-            <p className="govuk-body">{t("no_active_complaints")}</p>
-            <button className="govuk-button" onClick={() => navigate("#/citizen/new-complaint")}>
-              {t("file_new_complaint")}
-            </button>
-          </div>
+        <div style={{ background: "#ffffff", padding: "30px", border: "1px solid var(--border-color)", textAlign: "center" }}>
+          <p className="govuk-body" style={{ color: "var(--text-secondary)", marginBottom: "15px" }}>
+            {t("no_active_complaints")}
+          </p>
+          <button className="govuk-button" onClick={() => navigate("#/citizen/new-complaint")}>
+            {t("file_new_complaint")}
+          </button>
         </div>
       )}
     </div>
